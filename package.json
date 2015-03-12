@@ -2,7 +2,7 @@
   "name": "syzygy",
   "version": "0.0.1",
   "description": "Configuration system",
-  "main": "index.js",
+  "main": "syzygy.js",
   "scripts": {
     "test": "mocha"
   },
