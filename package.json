@@ -1,0 +1,21 @@
+{
+  "name": "syzygy",
+  "version": "0.0.1",
+  "description": "Configuration system",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "es6-promises": "~1",
+    "propertize": "~2",
+    "objektify": "~1"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "expect.js": "*",
+    "sinon": "*"
+  },
+  "author": "Richard Remer (reanjr@gmail.com)",
+  "license": "MIT"
+}
