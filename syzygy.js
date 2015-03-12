@@ -1,4 +1,4 @@
-var Settings = require("./lib/settings");
+var Settings = require("./settings");
 
 /**
  * Register a plugin.
