@@ -9,7 +9,8 @@
   "dependencies": {
     "es6-promises": "~1",
     "propertize": "~2",
-    "objektify": "~1"
+    "objektify": "~1",
+    "mock-fs": "~2.5"
   },
   "devDependencies": {
     "mocha": "*",
