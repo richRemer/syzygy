@@ -1,6 +1,7 @@
 var syzygy = require(".."),
     expect = require("expect.js"),
     sinon = require("sinon"),
+    mockfs = require("mock-fs"),
     Promise = require("es6-promises");
 
 describe("syzygy", function() {
@@ -85,6 +86,69 @@ describe("syzygy", function() {
             result = config.foo();
             expect(plugin.calledOnce).to.be(true);
             expect(result).to.be(config);
+        });
+    });
+
+    describe("<built-in plugins>", function() {
+        describe(".json", function() {
+            beforeEach(function() {
+                mockfs({
+                    "local.json": '{"foo":"local"}',
+                    "config/default.json": '{"foo":"default","bar":23}',
+                    "config/bad.json": "{'"
+                });
+            });
+
+            afterEach(mockfs.restore.bind(mockfs));
+
+            it("should load JSON data", function(done) {
+                new syzygy.Configuration()
+                    .json("config/default.json")
+                    .then(function(settings) {
+                        expect(settings).to.be.an("object");
+                        expect(settings.foo).to.be("default");
+                        expect(settings.bar).to.be(23);
+                        done();
+                    }).catch(done);
+            });
+
+            it("should overwrite data in serialized order", function(done) {
+                new syzygy.Configuration()
+                    .json("config/default.json")
+                    .json("local.json")
+                    .then(function(settings) {
+                        expect(settings).to.be.an("object");
+                        expect(settings.foo).to.be("local");
+                        expect(settings.bar).to.be(23);
+                        done();
+                    }).catch(done);
+            });
+
+            it("should silently ignore missing files", function(done) {
+                new syzygy.Configuration()
+                    .json("config/default.json")
+                    .json("local.json")
+                    .json("missing.json")
+                    .then(function(settings) {
+                        expect(settings.foo).to.be("local");
+                        done();
+                    }).catch(done);
+            });
+
+            it("should error on malformed JSON", function(done) {
+                new syzygy.Configuration()
+                    .json("missing.json")
+                    .json("local.json")
+                    .json("config/bad.json")
+                    .then(function(err) {
+                        expect(err).to.be.an(Error);
+                        done();
+                    })
+                    .catch(function(err) {
+                        expect(err).to.be.an(Error);
+                        done();
+                    });
+            });
         });
     });
 });

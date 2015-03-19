@@ -38,3 +38,6 @@ module.exports = create;
 module.exports.Configuration = Configuration;
 module.exports.Context = Context;
 module.exports.plugin = plugin;
+
+// add default plugins
+plugin("json", require("./lib/json"));
