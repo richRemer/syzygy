@@ -1,57 +1,6 @@
-var Promise = require("es6-promises"),
-    prop = require("propertize"),
-    copy = require("objektify").copy;
-
-/**
- * Merged configuration settings.
- * @constructor
- */
-function Configuration() {
-    var configuration = this,
-        contextPromise;
-
-    prop.internal(this, "contexts", []);
-    prop.internal(this, "promise", new Promise(function(resolve, reject) {
-        configuration.then = function(fulfilled, rejected) {
-            if (!contextPromise) {
-                contextPromise = Promise.all(this.contexts);
-                contextPromise.then(function(contextData) {
-                    var mergedData = {};
-                    contextData.forEach(copy.bind(null, mergedData));
-                    resolve(mergedData);
-                }).catch(reject);
-            }
-
-            return this.promise.then.apply(this.promise, arguments);
-        };
-    }));
-}
-
-/**
- * Configuration context in which a plugin will execute.
- * @param {Context} [parent]
- * @constructor
- */
-function Context(parent) {
-    var context = this;
-
-    prop.readonly(this, "parent", parent);
-    prop.internal(this, "promise", new Promise(function(resolve, reject) {
-        context.write = resolve;
-        context.error = reject;
-    }));
-}
-
-/**
- * Call fulfilled with resolved context data or rejected with an error once the
- * data has been loaded or failed.
- * @param {function} fulfilled
- * @param {function} [rejected]
- * @returns {Promise}
- */
-Context.prototype.then = function(fulfilled, rejected) {
-    return this.promise.then.apply(this.promise, arguments);
-};
+var Configuration = require("./lib/configuration"),
+    Context = require("./lib/context"),
+    Promise = require("es6-promises");
 
 /**
  * Add a syzygy plugin.  The name will be added to the syzygy.Configuration
@@ -85,7 +34,7 @@ function create() {
 /** export the create function */
 module.exports = create;
 
-/** decorate the exported function */
+/** decorate the function with the rest of the exports */
 module.exports.Configuration = Configuration;
 module.exports.Context = Context;
 module.exports.plugin = plugin;
