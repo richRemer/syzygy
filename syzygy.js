@@ -1,5 +1,4 @@
 var Promise = require("es6-promises"),
-    prop = require("propertize"),
     copy = require("objektify").copy;
 
 /**
@@ -77,7 +76,7 @@ function plugin(name, plugin) {
         this.previous = new Settings(this.previous);
 
         // execute plugin, using new settings object as context object
-        plugin.call(this.previous);        
+        plugin.call(this.previous);
 
         // chainable
         return this;
