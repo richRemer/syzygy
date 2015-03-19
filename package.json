@@ -1,6 +1,6 @@
 {
   "name": "syzygy",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Configuration system",
   "main": "syzygy.js",
   "scripts": {

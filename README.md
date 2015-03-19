@@ -4,15 +4,16 @@ Syzygy Asynchronous Configuration
 Example
 -------
 ```js
-var syzygy = require("syzygy")(),
+var syzygy = require("syzygy"),
     path = require("path"),
-    HOME = process.env.HOME || process.env.USERPROFILE,
-    APP = "app_name";
+    HOME = process.env.HOME || process.env.USERPROFILE;
 
 syzygy()
-    .json(path.join(HOME, "." + APP))
-    .json(path.join("/etc", APP))
-    .redis("localhost:6379", "app_config")
+    .json("/etc/my-app")
+    .json(path.join(HOME, ".my-app"))
+    .then(function(config) {
+        // config contains merged settings from JSON files
+    });
 ```
 
 Plugin Example
@@ -23,10 +24,11 @@ var syzygy = require("syzygy"),
 
 // define a "foo" plugin method
 syzygy.plugin("foo", function(config) {
-    // this.read can be used to asynchronously load from earlier configs
-    this.read("host", function(host) {
-        foo.doThings().then(function(val) {
-            // this.write ends this plugin and sets config values
+    // this.parent.then can be used to asynchronously load from earlier configs
+    this.parent.then(function(settings) {
+        var host = settings.host;
+        foo(host).doThings().then(function(val) {
+            // this.write ends this plugin and sets config values for the plugin
             this.write({foo_val: val});
         });
     });
