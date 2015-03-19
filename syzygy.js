@@ -1,89 +1,91 @@
 var Promise = require("es6-promises"),
+    prop = require("propertize"),
     copy = require("objektify").copy;
 
 /**
- * Asynchronous settings object.  Acts as a Promise which resolves to an object
- * containing settings names and values.  If a previous Settings object is
- * passed, those settings will be imported into this one.
+ * Merged configuration settings.
  * @constructor
- * @param {Settings} [previous]
  */
-function Settings(previous) {
-    var local = null,
-        previousData = null,
-        resolver = null,
-        that = this;
+function Configuration() {
+    var configuration = this,
+        contextPromise;
 
-    if (!previous) previous = Promise.resolve({});
-    this.previous = previous;
+    prop.internal(this, "contexts", []);
+    prop.internal(this, "promise", new Promise(function(resolve, reject) {
+        configuration.then = function(fulfilled, rejected) {
+            if (!contextPromise) {
+                contextPromise = Promise.all(this.contexts);
+                contextPromise.then(function(contextData) {
+                    var mergedData = {};
+                    contextData.forEach(copy.bind(null, mergedData));
+                    resolve(mergedData);
+                }).catch(reject);
+            }
 
-    /**
-     * Resolve Promised settings if ready.
-     */
-    function attemptResolve() {
-        if (local && previousData && resolver) {
-            resolver(copy(copy({}, previousData), local));
-            resolver = null;
-        }
-    }
-
-    // if there's no previous, set empty previous settings
-    if (!this.previous) previousData = {};
-
-    // setup base Promise
-    Promise.call(this, function(resolve, reject) {
-        resolver = resolve;
-
-        previous.then(function(data) {
-            previousData = data;
-            attemptResolve();
-        });
-        
-        attemptResolve();
-    });
-
-    /**
-     * Write settings data and resolve (pending previous resolution).
-     * @param {object} data
-     */
-    this.write = function(data) {
-        if (!local) local = data;
-        attemptResolve();
-    };
-}
-
-Settings.prototype = Object.create(Promise.prototype);
-
-/**
- * Create a new Settings object.
- * @param {Settings} [previous]
- * @returns {Settings}
- */
-function create(previous) {
-    return new Settings(previous);
+            return this.promise.then.apply(this.promise, arguments);
+        };
+    }));
 }
 
 /**
- * Register a plugin.
+ * Configuration context in which a plugin will execute.
+ * @param {Context} [parent]
+ * @constructor
+ */
+function Context(parent) {
+    var context = this;
+
+    prop.readonly(this, "parent", parent);
+    prop.internal(this, "promise", new Promise(function(resolve, reject) {
+        context.write = resolve;
+        context.error = reject;
+    }));
+}
+
+/**
+ * Call fulfilled with resolved context data or rejected with an error once the
+ * data has been loaded or failed.
+ * @param {function} fulfilled
+ * @param {function} [rejected]
+ * @returns {Promise}
+ */
+Context.prototype.then = function(fulfilled, rejected) {
+    return this.promise.then.apply(this.promise, arguments);
+};
+
+/**
+ * Add a syzygy plugin.  The name will be added to the syzygy.Configuration
+ * prototype.  The plugin will be executed with a Context object set to "this".
+ * The plugin must call either the .write or .error method when finished.
  * @param {string} name
  * @param {function} plugin
  */
 function plugin(name, plugin) {
-    Settings.prototype[name] = function() {
-        var settings;
+    Configuration.prototype[name] = function() {
+        var parent = this.contexts.slice(-1)[0],
+            context = new Context(parent);
 
-        // new settings override existing previous
-        this.previous = new Settings(this.previous);
-
-        // execute plugin, using new settings object as context object
-        plugin.call(this.previous);
+        // add new context and use it to execute plugin
+        this.contexts.push(context);
+        plugin.apply(context, arguments);
 
         // chainable
         return this;
     };
 }
 
-/** export create with additional decorated exports */
+/**
+ * Create a new syzygy Configuration object.
+ * @returns {Configuration}
+ */
+function create() {
+    return new Configuration();
+}
+
+/** export the create function */
 module.exports = create;
-module.exports.Settings = Settings;
+
+/** decorate the exported function */
+module.exports.Configuration = Configuration;
+module.exports.Context = Context;
 module.exports.plugin = plugin;
